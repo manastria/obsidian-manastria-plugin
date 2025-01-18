@@ -1,0 +1,34 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".", // Définit la base des chemins relatifs
+		"inlineSourceMap": true, // Inclut les sourcemaps directement dans le fichier généré
+		"inlineSources": true, // Inclut les sources TypeScript dans les sourcemaps
+		"module": "ESNext", // Utilise le format ESNext pour les modules (Obsidian supporte ES modules)
+		"target": "ES6", // Compile en ES6 (minimum requis pour Obsidian)
+		"allowJs": true, // Permet d'utiliser des fichiers JavaScript si nécessaire
+		"noImplicitAny": true, // Interdit les types `any` implicites pour renforcer la sécurité
+		"moduleResolution": "node", // Utilise la résolution de modules Node.js
+		"importHelpers": true, // Réduit le code généré pour les helpers TypeScript
+		"isolatedModules": true, // Renforce l'isolation des fichiers
+		"strictNullChecks": true, // Active les vérifications strictes pour `null` et `undefined`
+		"allowSyntheticDefaultImports": true, // Permet d'importer les modules sans default explicit
+		"outDir": "./dist", // Définit le dossier de sortie des fichiers compilés
+		"rootDir": "./src", // Définit le dossier source
+		"lib": [
+			"DOM", // Inclut les types pour manipuler le DOM
+			"ES5", // Supporte ES5 (souvent requis pour compatibilité)
+			"ES6", // Supporte ES6 (minimum pour Obsidian)
+			"ES7" // Supporte ES7 si nécessaire
+		],
+		"typeRoots": [
+			"./node_modules/@types" // Définit où chercher les types (typings)
+		]
+	},
+	"include": [
+		"src/**/*" // Inclut tous les fichiers TypeScript dans le dossier `src`
+	],
+	"exclude": [
+		"node_modules", // Exclut les fichiers dans `node_modules`
+		"dist" // Exclut les fichiers compilés
+	]
+}

@@ -39,8 +39,12 @@ There are two supported workflows: manual (GitHub UI) or automated (GitHub CLI).
 
 1. Run `npm run zip` to build and create `releases/<id>-v<version>.zip`.
 2. Create a new GitHub release using your version as the tag (no `v` prefix).
-3. Upload the zip from `releases/` as the release asset.
-   The zip must contain `manifest.json`, `main.js`, and `styles.css` at the root.
+3. Upload these release assets:
+   - `manifest.json`
+   - `dist/main.js` (asset name will be `main.js`)
+   - `styles.css` (if used)
+   - `releases/<id>-v<version>.zip` (optional, but handy for manual installs)
+   BRAT expects the loose files, it does not read inside the zip.
 4. Publish the release.
 
 ### Automated (GitHub CLI)
@@ -48,7 +52,7 @@ There are two supported workflows: manual (GitHub UI) or automated (GitHub CLI).
 Prereqs: install GitHub CLI (`gh`) and run `gh auth login`.
 
 1. Run `npm run release`.
-   This builds the zip, creates/pushes the tag, and creates the GitHub release with the zip asset.
+   This builds the zip, creates/pushes the tag, and creates the GitHub release with both the zip and loose assets.
 
 > You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
 > The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`

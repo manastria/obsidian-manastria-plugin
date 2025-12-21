@@ -28,11 +28,27 @@ Quick starting guide for new plugin devs:
 
 ## Releasing new releases
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+There are two supported workflows: manual (GitHub UI) or automated (GitHub CLI).
+
+### Common steps
+
+1. Update `manifest.json` with your new version number (example: `1.0.1`) and the minimum Obsidian version for this release.
+2. Update `versions.json` with `"new-plugin-version": "minimum-obsidian-version"` so older Obsidian versions can download a compatible plugin.
+
+### Manual (GitHub UI)
+
+1. Run `npm run zip` to build and create `releases/<id>-v<version>.zip`.
+2. Create a new GitHub release using your version as the tag (no `v` prefix).
+3. Upload the zip from `releases/` as the release asset.
+   The zip must contain `manifest.json`, `main.js`, and `styles.css` at the root.
+4. Publish the release.
+
+### Automated (GitHub CLI)
+
+Prereqs: install GitHub CLI (`gh`) and run `gh auth login`.
+
+1. Run `npm run release`.
+   This builds the zip, creates/pushes the tag, and creates the GitHub release with the zip asset.
 
 > You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
 > The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`

@@ -77,9 +77,8 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
 	frontmatter.level = frontmatter.level || [];
 	frontmatter.option = frontmatter.option || [];
 	frontmatter.target = frontmatter.target || [];
-	frontmatter.slug = frontmatter.slug || [];
 	frontmatter.keywords = frontmatter.keywords || [];
-	frontmatter.permalink = frontmatter.permalink || [];
+	frontmatter.permalink = frontmatter.permalink || "";
 
     return frontmatter;
 }

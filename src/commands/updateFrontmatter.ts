@@ -6,6 +6,15 @@ const base36MaxLength = 10;
 const base62MaxLength = 11;
 // Liste des champs scalaires à normaliser. Scalaires signifie qu'ils doivent être des chaînes ou null.
 const scalarFields = ["permalink", "level"];
+type FrontmatterGroup = { name: string; keys: string[] };
+const topGroups: FrontmatterGroup[] = [
+    { name: "id", keys: ["id", "id36", "id62"] },
+    { name: "dates", keys: ["created", "updated"] },
+];
+const bottomGroups: FrontmatterGroup[] = [
+    { name: "taxonomy", keys: ["aliases", "tags", "topics", "audience", "keywords"] },
+    { name: "student-level", keys: ["option", "level", "target"] },
+];
 
 // Fonction pour enregistrer la commande
 export function registerUpdateFrontmatterCommand(plugin: Plugin) {
@@ -29,8 +38,10 @@ export function registerUpdateFrontmatterCommand(plugin: Plugin) {
 async function updateFile(plugin: Plugin, file: TFile): Promise<void> {
     const content = await plugin.app.vault.read(file); // Lire le contenu du fichier
     const { frontmatter, restContent } = parseFrontmatter(content); // Extraire le front matter
+    const originalKeyOrder = frontmatter ? Object.keys(frontmatter) : [];
     const updatedFrontmatter = updateFrontmatter(frontmatter || {}, file); // Mettre à jour le front matter
-    const updatedContent = buildUpdatedContent(updatedFrontmatter, restContent); // Reconstruire le fichier
+    const sortedFrontmatter = sortFrontmatter(updatedFrontmatter, originalKeyOrder);
+    const updatedContent = buildUpdatedContent(sortedFrontmatter, restContent); // Reconstruire le fichier
     await plugin.app.vault.modify(file, updatedContent); // Écrire dans le fichier
     new Notice(`Frontmatter updated for ${file.name}`);
 }
@@ -164,4 +175,38 @@ function normalizeEmptyScalarKeys(yaml: string, keys: string[]): string {
     const escapedKeys = keys.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
     const pattern = new RegExp(`^(${escapedKeys.join("|")}):\\s*(?:null|''|\"\"|~)?\\s*$`, "gm");
     return yaml.replace(pattern, "$1:");
+}
+
+function sortFrontmatter(frontmatter: Record<string, unknown>, originalOrder: string[]): Record<string, unknown> {
+    const sorted: Record<string, unknown> = {};
+    const seen = new Set<string>();
+    const groupedKeys = new Set<string>();
+    [...topGroups, ...bottomGroups].forEach((group) => {
+        group.keys.forEach((key) => groupedKeys.add(key));
+    });
+
+    const addKey = (key: string) => {
+        if (seen.has(key) || !(key in frontmatter)) {
+            return;
+        }
+        sorted[key] = frontmatter[key];
+        seen.add(key);
+    };
+
+    topGroups.forEach((group) => group.keys.forEach(addKey));
+
+    const middleKeys = (originalOrder.length > 0 ? originalOrder : Object.keys(frontmatter)).filter(
+        (key) => !groupedKeys.has(key),
+    );
+    middleKeys.forEach(addKey);
+
+    Object.keys(frontmatter).forEach((key) => {
+        if (!groupedKeys.has(key)) {
+            addKey(key);
+        }
+    });
+
+    bottomGroups.forEach((group) => group.keys.forEach(addKey));
+
+    return sorted;
 }

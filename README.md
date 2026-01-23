@@ -51,11 +51,31 @@ There are two supported workflows: manual (GitHub UI) or automated (GitHub CLI).
 
 Prereqs: install GitHub CLI (`gh`) and run `gh auth login`.
 
-1. Run `npm run release`.
-   This builds the zip, creates/pushes the tag, and creates the GitHub release with both the zip and loose assets.
+Workflow (recommended):
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. Update versions:
+   - Edit `manifest.json` (`version` and `minAppVersion`).
+   - Run `npm version patch|minor|major` to bump the version and sync files.
+     This updates:
+     - `manifest.json` (version)
+     - `package.json` (version)
+     - `versions.json` (adds the new entry)
+   - If you only need to change `minAppVersion` without changing the plugin version,
+     edit `manifest.json` and `versions.json` manually (do not run `npm version`).
+2. Commit the changes:
+   - `git add manifest.json package.json package-lock.json versions.json`
+   - `git commit -m "Release x.y.z"`
+3. Push:
+   - `git push`
+   - If `npm version` created a tag locally, also push tags: `git push --tags`
+4. Run `npm run release`.
+   This builds the zip, creates/pushes the tag (if missing), and creates the GitHub release
+   with both the zip and loose assets.
+
+Notes on `npm version`:
+- `npm version patch|minor|major` updates version fields and creates a Git tag.
+- It runs `preversion`, `version`, and `postversion` npm scripts if present.
+- If you already committed and only want to update version files, run it before the release commit.
 
 ## Adding your plugin to the community plugin list
 

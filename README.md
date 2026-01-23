@@ -54,7 +54,7 @@ Prereqs: install GitHub CLI (`gh`) and run `gh auth login`.
 Workflow (recommended):
 
 1. Update versions:
-   - Edit `manifest.json` (`version` and `minAppVersion`).
+   - Verify `manifest.json` (`version` and `minAppVersion`).
    - Run `npm version patch|minor|major` to bump the version and sync files.
      This updates:
      - `manifest.json` (version)
@@ -62,13 +62,10 @@ Workflow (recommended):
      - `versions.json` (adds the new entry)
    - If you only need to change `minAppVersion` without changing the plugin version,
      edit `manifest.json` and `versions.json` manually (do not run `npm version`).
-2. Commit the changes:
-   - `git add manifest.json package.json package-lock.json versions.json`
-   - `git commit -m "Release x.y.z"`
-3. Push:
+2. Push:
    - `git push`
    - If `npm version` created a tag locally, also push tags: `git push --tags`
-4. Run `npm run release`.
+3. Run `npm run release`.
    This builds the zip, creates/pushes the tag (if missing), and creates the GitHub release
    with both the zip and loose assets.
 

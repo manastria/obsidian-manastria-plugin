@@ -4,6 +4,8 @@ import moment from "moment-timezone";
 
 const base36MaxLength = 10;
 const base62MaxLength = 11;
+// Liste des champs scalaires à normaliser. Scalaires signifie qu'ils doivent être des chaînes ou null.
+const scalarFields = ["permalink", "level"];
 
 // Fonction pour enregistrer la commande
 export function registerUpdateFrontmatterCommand(plugin: Plugin) {
@@ -74,11 +76,12 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
     frontmatter.tags = frontmatter.tags || [];
 	frontmatter.audience = frontmatter.audience || [];
 	frontmatter.topics = frontmatter.topics || [];
-	frontmatter.level = frontmatter.level || [];
 	frontmatter.option = frontmatter.option || [];
 	frontmatter.target = frontmatter.target || [];
 	frontmatter.keywords = frontmatter.keywords || [];
-	frontmatter.permalink = frontmatter.permalink || "";
+    scalarFields.forEach((field) => {
+        frontmatter[field] = normalizeScalarField(frontmatter[field]);
+    });
 
     return frontmatter;
 }
@@ -91,7 +94,8 @@ function buildUpdatedContent(frontmatter: any, content: string): string {
         noRefs: true,
         skipInvalid: true,
     });
-    return `---\n${yamlString.trim()}\n---\n${content}`;
+    const normalizedYaml = normalizeEmptyScalarKeys(yamlString.trim(), scalarFields);
+    return `---\n${normalizedYaml}\n---\n${content}`;
 }
 
 
@@ -135,4 +139,29 @@ function generateBase36AndBase62(uuid: string): { base36: string; base62: string
         base36: intToBase36(num).slice(0, base36MaxLength),
         base62: intToBase62(num).slice(0, base62MaxLength),
     };
+}
+
+function normalizeScalarField(value: unknown): string | null {
+    if (Array.isArray(value)) {
+        if (value.length === 0) {
+            return null;
+        }
+        if (value.length === 1) {
+            return String(value[0] ?? "");
+        }
+        return value.map((entry) => String(entry ?? "")).join(", ");
+    }
+    if (value === null || value === undefined) {
+        return null;
+    }
+    return String(value);
+}
+
+function normalizeEmptyScalarKeys(yaml: string, keys: string[]): string {
+    if (keys.length === 0) {
+        return yaml;
+    }
+    const escapedKeys = keys.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const pattern = new RegExp(`^(${escapedKeys.join("|")}):\\s*(?:null|''|\"\"|~)?\\s*$`, "gm");
+    return yaml.replace(pattern, "$1:");
 }

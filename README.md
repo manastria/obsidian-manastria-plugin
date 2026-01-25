@@ -88,9 +88,25 @@ Notes on `npm version`:
 - `npm i` or `yarn` to install dependencies.
 - `npm run dev` to start compilation in watch mode.
 
+## Manual tests
+
+- Open a `.md` note, run the command "Mettre au rebut la note courante", select "Remplacee (deprecated)", pick a replacement note, and confirm.
+- Verify frontmatter updates (`status`, `lifecycle`, `deprecated_since`, `replaced_by`) and that `id`/`ref` remain unchanged.
+- Check that a warning callout is placed right after the frontmatter with the replacement link, or updated if already present.
+- Run again with "Obsolete (obsolete)" and ensure the callout switches to danger and `replaced_by` is removed.
+- Toggle "Deplacer dans 90-Archives/" and confirm the file moves to `90-Archives/` with the same name.
+- Try with a `.mdx` note and with no active note to confirm the error notice behavior.
+
 ## Manually installing the plugin
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+- Build the plugin: `npm run build` (or `npm run dev` during development).
+  This generates `dist/main.js` and copies `manifest.json` / `styles.css` into `dist/`.
+- Create the folder `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+- Copy these files from `dist/` into that folder:
+  - `main.js`
+  - `manifest.json`
+  - `styles.css` (only if you use it)
+- Reload Obsidian and enable the plugin.
 
 ## Improve code quality with eslint (optional)
 - [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 

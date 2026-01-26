@@ -76,9 +76,14 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
     frontmatter.created = frontmatter.created || fileCreationDate;
     frontmatter.updated = now;
 
-	// Si frontmatter.nature n'existe pas ou n'a pas de valeur, le supprimer
+	// Supprimer nature si non défini
     if (!frontmatter.nature) {
         delete frontmatter.nature;
+    }
+
+	// Supprimer keywords si non défini
+	if (!frontmatter.keywords) {
+        delete frontmatter.keywords;
     }
 
     frontmatter.status = frontmatter.status || "wip";

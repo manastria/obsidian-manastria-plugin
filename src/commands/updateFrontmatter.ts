@@ -81,10 +81,10 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
         delete frontmatter.nature;
     }
 
-	// Supprimer keywords si non défini
-	if (!frontmatter.keywords) {
-        delete frontmatter.keywords;
-    }
+	// Supprimer keywords si non défini ou vide
+	if (!frontmatter.keywords || (Array.isArray(frontmatter.keywords) && frontmatter.keywords.length === 0)) {
+		delete frontmatter.keywords;
+	}
 
     frontmatter.status = frontmatter.status || "wip";
     frontmatter.publish = frontmatter.publish || false;

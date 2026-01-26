@@ -4,6 +4,7 @@ import moment from "moment-timezone";
 
 const base36MaxLength = 10;
 const base62MaxLength = 11;
+const obsidianDateTimeFormat = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 // Liste des champs scalaires à normaliser. Scalaires signifie qu'ils doivent être des chaînes ou null.
 const scalarFields = ["permalink", "level", "type"];
 type FrontmatterGroup = { name: string; keys: string[] };
@@ -76,8 +77,6 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
     frontmatter.created = frontmatter.created || fileCreationDate;
     frontmatter.updated = now;
 
-	deleteIfFalsy(frontmatter, "nature");
-	deleteIfFalsy(frontmatter, "slug");
 	deleteIfEmptyArrayOrFalsy(frontmatter, "keywords");
 
     frontmatter.status = frontmatter.status || "wip";
@@ -98,6 +97,10 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
 	mergeTargets(frontmatter);
 	defaultToArray(frontmatter, "targets");
 	normalizeScalarFields(frontmatter, scalarFields);
+
+
+	deleteIfFalsy(frontmatter, "nature");
+	deleteIfFalsy(frontmatter, "slug");
 
 	normalizeDateFields(frontmatter);
 
@@ -120,7 +123,7 @@ function buildUpdatedContent(frontmatter: any, content: string): string {
 // Fonctions utilitaires pour les dates et UUIDs
 function formatDateWithTimezone(date: Date, timezone?: string): string {
     const effectiveTimezone = timezone || moment.tz.guess();
-    return moment(date).tz(effectiveTimezone).format();
+    return moment(date).tz(effectiveTimezone).format(obsidianDateTimeFormat);
 }
 
 function generateUUID(): string {
@@ -213,6 +216,7 @@ function normalizeScalarFields(frontmatter: Record<string, unknown>, fields: str
 }
 
 function normalizeDateFields(frontmatter: Record<string, unknown>): void {
+	normalizeCreatedUpdated(frontmatter);
 	// Supprimer date/datetime si même jour que created (created est la source de vérité)
 	if (!frontmatter.created) {
 		return;
@@ -228,6 +232,17 @@ function normalizeDateFields(frontmatter: Record<string, unknown>): void {
 	const datetimeDay = extractDayString(frontmatter.datetime);
 	if (datetimeDay && datetimeDay === createdDay) {
 		delete frontmatter.datetime;
+	}
+}
+
+function normalizeCreatedUpdated(frontmatter: Record<string, unknown>): void {
+	const created = parseDateValue(frontmatter.created);
+	if (created) {
+		frontmatter.created = formatDateWithTimezone(created.toDate());
+	}
+	const updated = parseDateValue(frontmatter.updated);
+	if (updated) {
+		frontmatter.updated = formatDateWithTimezone(updated.toDate());
 	}
 }
 
@@ -253,30 +268,36 @@ function mergeTargets(frontmatter: Record<string, unknown>): void {
 	delete frontmatter.target;
 }
 
-function extractDayString(value: unknown): string | null {
+const dateParseFormats = [
+	moment.ISO_8601,
+	"YYYY-MM-DD",
+	"YYYY-MM-DDTHH:mm",
+	"YYYY-MM-DDTHH:mm:ss",
+	"YYYY-MM-DDTHH:mm:ss.SSSZ",
+	"DD.MM.YYYY",
+	"DD.MM.YYYY HH:mm",
+	"DD.MM.YYYY HH:mm:ss",
+];
+
+function parseDateValue(value: unknown): moment.Moment | null {
 	if (value === null || value === undefined) {
 		return null;
 	}
 	if (value instanceof Date) {
 		const parsedDate = moment(value);
-		return parsedDate.isValid() ? parsedDate.format("YYYY-MM-DD") : null;
+		return parsedDate.isValid() ? parsedDate : null;
 	}
 	const raw = String(value).trim();
 	if (!raw) {
 		return null;
 	}
-	const formats = [
-		moment.ISO_8601,
-		"YYYY-MM-DD",
-		"YYYY-MM-DDTHH:mm",
-		"YYYY-MM-DDTHH:mm:ss",
-		"YYYY-MM-DDTHH:mm:ss.SSSZ",
-		"DD.MM.YYYY",
-		"DD.MM.YYYY HH:mm",
-		"DD.MM.YYYY HH:mm:ss",
-	];
-	const parsed = moment(raw, formats, true);
-	if (!parsed.isValid()) {
+	const parsed = moment(raw, dateParseFormats, true);
+	return parsed.isValid() ? parsed : null;
+}
+
+function extractDayString(value: unknown): string | null {
+	const parsed = parseDateValue(value);
+	if (!parsed) {
 		return null;
 	}
 	return parsed.format("YYYY-MM-DD");

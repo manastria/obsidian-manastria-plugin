@@ -5,14 +5,14 @@ import moment from "moment-timezone";
 const base36MaxLength = 10;
 const base62MaxLength = 11;
 // Liste des champs scalaires à normaliser. Scalaires signifie qu'ils doivent être des chaînes ou null.
-const scalarFields = ["permalink", "level"];
+const scalarFields = ["permalink", "level", "type"];
 type FrontmatterGroup = { name: string; keys: string[] };
 const topGroups: FrontmatterGroup[] = [
     { name: "id", keys: ["id", "id36", "id62"] },
     { name: "dates", keys: ["created", "updated"] },
 ];
 const bottomGroups: FrontmatterGroup[] = [
-    { name: "taxonomy", keys: ["aliases", "tags", "topics", "audience", "keywords"] },
+    { name: "taxonomy", keys: ["aliases", "tags", "type", "nature", "topics", "audience", "keywords"] },
     { name: "student-level", keys: ["option", "level", "target"] },
 ];
 
@@ -76,7 +76,11 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
     frontmatter.created = frontmatter.created || fileCreationDate;
     frontmatter.updated = now;
 
-    frontmatter.nature = frontmatter.nature || "fiche";
+	// Si frontmatter.nature n'existe pas ou n'a pas de valeur, le supprimer
+    if (!frontmatter.nature) {
+        delete frontmatter.nature;
+    }
+
     frontmatter.status = frontmatter.status || "wip";
     frontmatter.publish = frontmatter.publish || false;
     frontmatter.private = frontmatter.private || false;
@@ -88,11 +92,44 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
 	frontmatter.audience = frontmatter.audience || [];
 	frontmatter.topics = frontmatter.topics || [];
 	frontmatter.option = frontmatter.option || [];
-	frontmatter.target = frontmatter.target || [];
-	frontmatter.keywords = frontmatter.keywords || [];
+	// Normaliser target -> targets et fusionner si besoin
+	if (frontmatter.target !== undefined) {
+		const normalizeList = (value: unknown): string[] => {
+			if (Array.isArray(value)) {
+				return value.map((entry) => String(entry ?? "")).filter((entry) => entry.length > 0);
+			}
+			if (value === null || value === undefined || value === "") {
+				return [];
+			}
+			return [String(value)];
+		};
+		const mergedTargets = [
+			...normalizeList(frontmatter.targets),
+			...normalizeList(frontmatter.target),
+		];
+		const dedupedTargets = Array.from(new Set(mergedTargets));
+		frontmatter.targets = dedupedTargets;
+		delete frontmatter.target;
+	}
+	frontmatter.targets = frontmatter.targets || [];
     scalarFields.forEach((field) => {
         frontmatter[field] = normalizeScalarField(frontmatter[field]);
     });
+
+	// Supprimer date/datetime si même jour que created (created est la source de vérité)
+	if (frontmatter.created) {
+		const createdDay = extractDayString(frontmatter.created);
+		if (createdDay) {
+			const dateDay = extractDayString(frontmatter.date);
+			if (dateDay && dateDay === createdDay) {
+				delete frontmatter.date;
+			}
+			const datetimeDay = extractDayString(frontmatter.datetime);
+			if (datetimeDay && datetimeDay === createdDay) {
+				delete frontmatter.datetime;
+			}
+		}
+	}
 
     return frontmatter;
 }
@@ -175,6 +212,31 @@ function normalizeEmptyScalarKeys(yaml: string, keys: string[]): string {
     const escapedKeys = keys.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
     const pattern = new RegExp(`^(${escapedKeys.join("|")}):\\s*(?:null|''|\"\"|~)?\\s*$`, "gm");
     return yaml.replace(pattern, "$1:");
+}
+
+function extractDayString(value: unknown): string | null {
+	if (value === null || value === undefined) {
+		return null;
+	}
+	const raw = String(value).trim();
+	if (!raw) {
+		return null;
+	}
+	const formats = [
+		moment.ISO_8601,
+		"YYYY-MM-DD",
+		"YYYY-MM-DDTHH:mm",
+		"YYYY-MM-DDTHH:mm:ss",
+		"YYYY-MM-DDTHH:mm:ss.SSSZ",
+		"DD.MM.YYYY",
+		"DD.MM.YYYY HH:mm",
+		"DD.MM.YYYY HH:mm:ss",
+	];
+	const parsed = moment(raw, formats, true);
+	if (!parsed.isValid()) {
+		return null;
+	}
+	return parsed.format("YYYY-MM-DD");
 }
 
 function sortFrontmatter(frontmatter: Record<string, unknown>, originalOrder: string[]): Record<string, unknown> {

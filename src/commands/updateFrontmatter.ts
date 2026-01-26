@@ -6,7 +6,7 @@ const base36MaxLength = 10;
 const base62MaxLength = 11;
 const obsidianDateTimeFormat = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 // Liste des champs scalaires à normaliser. Scalaires signifie qu'ils doivent être des chaînes ou null.
-const scalarFields = ["permalink", "level", "type"];
+const scalarFields = ["permalink", "level", "type", "slug"];
 type FrontmatterGroup = { name: string; keys: string[] };
 const topGroups: FrontmatterGroup[] = [
     { name: "id", keys: ["id", "id36", "id62"] },

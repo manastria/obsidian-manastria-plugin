@@ -9,7 +9,7 @@ const scalarFields = ["permalink", "level", "type"];
 type FrontmatterGroup = { name: string; keys: string[] };
 const topGroups: FrontmatterGroup[] = [
     { name: "id", keys: ["id", "id36", "id62"] },
-    { name: "dates", keys: ["created", "updated"] },
+    { name: "dates", keys: ["date", "datetime", "created", "updated"] },
 ];
 const bottomGroups: FrontmatterGroup[] = [
     { name: "taxonomy", keys: ["aliases", "tags", "type", "nature", "topics", "audience", "keywords"] },
@@ -217,6 +217,10 @@ function normalizeEmptyScalarKeys(yaml: string, keys: string[]): string {
 function extractDayString(value: unknown): string | null {
 	if (value === null || value === undefined) {
 		return null;
+	}
+	if (value instanceof Date) {
+		const parsedDate = moment(value);
+		return parsedDate.isValid() ? parsedDate.format("YYYY-MM-DD") : null;
 	}
 	const raw = String(value).trim();
 	if (!raw) {

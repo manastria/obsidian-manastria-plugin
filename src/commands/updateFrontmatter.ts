@@ -76,20 +76,9 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
     frontmatter.created = frontmatter.created || fileCreationDate;
     frontmatter.updated = now;
 
-	// Supprimer nature si non défini
-    if (!frontmatter.nature) {
-        delete frontmatter.nature;
-    }
-
-	// Supprimer slug si non défini
-	if (!frontmatter.slug) {
-		delete frontmatter.slug;
-	}
-
-	// Supprimer keywords si non défini ou vide
-	if (!frontmatter.keywords || (Array.isArray(frontmatter.keywords) && frontmatter.keywords.length === 0)) {
-		delete frontmatter.keywords;
-	}
+	deleteIfFalsy(frontmatter, "nature");
+	deleteIfFalsy(frontmatter, "slug");
+	deleteIfEmptyArrayOrFalsy(frontmatter, "keywords");
 
     frontmatter.status = frontmatter.status || "wip";
     frontmatter.publish = frontmatter.publish || false;
@@ -97,55 +86,20 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
     if (!Array.isArray(frontmatter["disabled rules"])) {
 		frontmatter["disabled rules"] = ["capitalize-headings"];
 	}	
-    frontmatter.aliases = frontmatter.aliases || [];
-    frontmatter.tags = frontmatter.tags || [];
-	frontmatter.audience = frontmatter.audience || [];
-	frontmatter.topics = frontmatter.topics || [];
-	frontmatter.option = frontmatter.option || [];
+	["aliases", "tags", "audience", "topics", "option"].forEach((field) =>
+		defaultToArray(frontmatter, field),
+	);
 
 	// Supprimer frontmatter.permalink si il est vide et si frontmatter.publish est false
 	if (!frontmatter.publish && !frontmatter.permalink) {
 		delete frontmatter.permalink;
 	}
 
-	// Normaliser target -> targets et fusionner si besoin
-	if (frontmatter.target !== undefined) {
-		const normalizeList = (value: unknown): string[] => {
-			if (Array.isArray(value)) {
-				return value.map((entry) => String(entry ?? "")).filter((entry) => entry.length > 0);
-			}
-			if (value === null || value === undefined || value === "") {
-				return [];
-			}
-			return [String(value)];
-		};
-		const mergedTargets = [
-			...normalizeList(frontmatter.targets),
-			...normalizeList(frontmatter.target),
-		];
-		const dedupedTargets = Array.from(new Set(mergedTargets));
-		frontmatter.targets = dedupedTargets;
-		delete frontmatter.target;
-	}
-	frontmatter.targets = frontmatter.targets || [];
-    scalarFields.forEach((field) => {
-        frontmatter[field] = normalizeScalarField(frontmatter[field]);
-    });
+	mergeTargets(frontmatter);
+	defaultToArray(frontmatter, "targets");
+	normalizeScalarFields(frontmatter, scalarFields);
 
-	// Supprimer date/datetime si même jour que created (created est la source de vérité)
-	if (frontmatter.created) {
-		const createdDay = extractDayString(frontmatter.created);
-		if (createdDay) {
-			const dateDay = extractDayString(frontmatter.date);
-			if (dateDay && dateDay === createdDay) {
-				delete frontmatter.date;
-			}
-			const datetimeDay = extractDayString(frontmatter.datetime);
-			if (datetimeDay && datetimeDay === createdDay) {
-				delete frontmatter.datetime;
-			}
-		}
-	}
+	normalizeDateFields(frontmatter);
 
     return frontmatter;
 }
@@ -228,6 +182,75 @@ function normalizeEmptyScalarKeys(yaml: string, keys: string[]): string {
     const escapedKeys = keys.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
     const pattern = new RegExp(`^(${escapedKeys.join("|")}):\\s*(?:null|''|\"\"|~)?\\s*$`, "gm");
     return yaml.replace(pattern, "$1:");
+}
+
+function deleteIfFalsy(frontmatter: Record<string, unknown>, key: string): void {
+	if (!frontmatter[key]) {
+		delete frontmatter[key];
+	}
+}
+
+function deleteIfEmptyArrayOrFalsy(frontmatter: Record<string, unknown>, key: string): void {
+	const value = frontmatter[key];
+	if (!value || (Array.isArray(value) && value.length === 0)) {
+		delete frontmatter[key];
+	}
+}
+
+function defaultToArray(frontmatter: Record<string, unknown>, key: string): void {
+	if (!frontmatter[key]) {
+		frontmatter[key] = [];
+	}
+}
+
+function normalizeScalarFields(frontmatter: Record<string, unknown>, fields: string[]): void {
+	fields.forEach((field) => {
+		if (frontmatter[field] === undefined) {
+			return;
+		}
+		frontmatter[field] = normalizeScalarField(frontmatter[field]);
+	});
+}
+
+function normalizeDateFields(frontmatter: Record<string, unknown>): void {
+	// Supprimer date/datetime si même jour que created (created est la source de vérité)
+	if (!frontmatter.created) {
+		return;
+	}
+	const createdDay = extractDayString(frontmatter.created);
+	if (!createdDay) {
+		return;
+	}
+	const dateDay = extractDayString(frontmatter.date);
+	if (dateDay && dateDay === createdDay) {
+		delete frontmatter.date;
+	}
+	const datetimeDay = extractDayString(frontmatter.datetime);
+	if (datetimeDay && datetimeDay === createdDay) {
+		delete frontmatter.datetime;
+	}
+}
+
+function normalizeListValue(value: unknown): string[] {
+	if (Array.isArray(value)) {
+		return value.map((entry) => String(entry ?? "")).filter((entry) => entry.length > 0);
+	}
+	if (value === null || value === undefined || value === "") {
+		return [];
+	}
+	return [String(value)];
+}
+
+function mergeTargets(frontmatter: Record<string, unknown>): void {
+	if (frontmatter.target === undefined) {
+		return;
+	}
+	const mergedTargets = [
+		...normalizeListValue(frontmatter.targets),
+		...normalizeListValue(frontmatter.target),
+	];
+	frontmatter.targets = Array.from(new Set(mergedTargets));
+	delete frontmatter.target;
 }
 
 function extractDayString(value: unknown): string | null {

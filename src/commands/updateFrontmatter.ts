@@ -81,6 +81,11 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
         delete frontmatter.nature;
     }
 
+	// Supprimer slug si non défini
+	if (!frontmatter.slug) {
+		delete frontmatter.slug;
+	}
+
 	// Supprimer keywords si non défini ou vide
 	if (!frontmatter.keywords || (Array.isArray(frontmatter.keywords) && frontmatter.keywords.length === 0)) {
 		delete frontmatter.keywords;
@@ -97,6 +102,12 @@ function updateFrontmatter(frontmatter: any, file: TFile): any {
 	frontmatter.audience = frontmatter.audience || [];
 	frontmatter.topics = frontmatter.topics || [];
 	frontmatter.option = frontmatter.option || [];
+
+	// Supprimer frontmatter.permalink si il est vide et si frontmatter.publish est false
+	if (!frontmatter.publish && !frontmatter.permalink) {
+		delete frontmatter.permalink;
+	}
+
 	// Normaliser target -> targets et fusionner si besoin
 	if (frontmatter.target !== undefined) {
 		const normalizeList = (value: unknown): string[] => {

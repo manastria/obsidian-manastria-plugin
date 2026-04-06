@@ -35,22 +35,39 @@ Exemple de contenu :
 
 ## **3. Workflow de mise à jour**
 Pour mettre à jour la version :
-1. Mettez à jour la version dans `package.json` :
+1. Si vous utilisez une API Obsidian introduite dans une version récente d'Obsidian,
+   ajustez `minAppVersion` dans `manifest.json` manuellement pour refléter cette exigence.
+
+   **Quand c'est nécessaire :** `minAppVersion` représente la version minimale d'Obsidian
+   requise pour faire fonctionner le plugin. Elle doit être mise à jour dès que le code
+   utilise une méthode ou une classe de l'API Obsidian qui n'existait pas dans la version
+   actuellement déclarée. Par exemple, si le plugin commence à utiliser une méthode
+   introduite dans Obsidian 1.8.0 alors que `minAppVersion` vaut `"1.7.7"`, il faut
+   passer `minAppVersion` à `"1.8.0"`.
+
+   **Quand ce n'est pas nécessaire :** un simple correctif de bug ou une nouvelle
+   commande qui n'utilise que des API déjà disponibles dans la version courante de
+   `minAppVersion` ne nécessite pas de modification.
+
+   `version-bump.mjs` ne touche jamais à `minAppVersion` : il se contente de la lire
+   pour l'inscrire dans `versions.json`. C'est donc le seul champ de `manifest.json`
+   qui doit être géré manuellement.
+2. Bumpez la version :
    ```bash
    npm version patch   # Ou minor/major selon le cas
    ```
-2. Exécutez le script `version-bump.mjs` pour mettre à jour `manifest.json` et `versions.json` :
+   Cette commande exécute automatiquement `version-bump.mjs` (lifecycle hook `version`),
+   qui met à jour `manifest.json` et `versions.json`, les stage, puis crée un commit et un tag Git local.
+3. Poussez le commit de version vers le dépôt distant :
    ```bash
-   npm run version
-   ```
-3. Créez un fichier ZIP avec la version dans le nom :
-   ```bash
-   npm run zip
+   git push
    ```
 4. Publiez la nouvelle version sur GitHub :
    ```bash
    npm run release
    ```
+   Cette commande construit le plugin, crée le ZIP, pousse le tag Git (`git push origin --tags`),
+   et publie la release GitHub avec tous les assets.
 
 ## **4. Recommandations**
 - **Utilisez des tags Git :** Assurez-vous que chaque version est taguée avec `vX.Y.Z`.

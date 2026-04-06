@@ -1,0 +1,13 @@
+# Fixer le comportement par défaut : 
+# Détection automatique du texte et conversion en LF lors de l'ajout au dépôt.
+* text=auto eol=lf
+
+# Forcer spécifiquement certains types de fichiers (optionnel mais recommandé)
+*.md text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+
+# Ignorer les fichiers binaires (ne pas toucher aux fins de ligne)
+*.png binary
+*.jpg binary
+
